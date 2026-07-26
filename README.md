@@ -65,3 +65,49 @@ To deploy on **Cloudflare Pages**:
 - Framework preset: **Vite**
 - Build command: `npm run build`
 - Build output directory: `dist`
+
+---
+
+## Deployment Workflow: Google AI Studio → GitHub → Cloudflare Pages
+
+### 1. Google AI Studio → GitHub
+
+The app was generated in **Google AI Studio App Build** from a specification prompt describing the Weather Intelligence App (city search, current weather, 7-day forecast, chart, rule-based recommendations). It was pushed to GitHub using AI Studio's **direct "Save to GitHub" connection** (not a manual export/upload):
+
+1. Opened the generated app in AI Studio App Build.
+2. Used the built-in "Save to GitHub" option and authorized GitHub access.
+3. Created the repository `weather-intelligence-app` directly from AI Studio.
+4. Confirmed the push succeeded and verified `package.json`, `src/`, and `README.md` were present in the new repo.
+
+Repository: https://github.com/rushmithakomma-ops/weather-intelligence-app
+
+No Secrets, API integration, or Publish features were used — only the public Open-Meteo APIs, which require no keys.
+
+### 2. GitHub → Cloudflare Pages
+
+1. In the Cloudflare dashboard, opened **Workers & Pages**.
+2. Note: newer Cloudflare accounts may not show a separate **Pages** tab (Cloudflare has been consolidating Pages into Workers). If no Pages tab is visible, use the direct link `https://dash.cloudflare.com/?to=/:account/pages/new/provider/github` to reach the Pages project creation flow.
+3. Chose **Connect to Git** and selected the `weather-intelligence-app` GitHub repository.
+4. Set the **Framework preset** to **Vite** — not "VitePress" (a different, docs-focused static site generator that Cloudflare also lists; picking it auto-fills the wrong build command/output directory).
+5. Configured:
+   - **Production branch**: `main`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `dist`
+6. Saved and deployed; confirmed the build log completed successfully.
+7. Live app URL: **https://weather-intelligence-app-2nh.pages.dev/**
+
+### 3. Validation
+
+- Verified the built JS/CSS assets are served with HTTP 200 from the pages.dev URL.
+- In-browser testing confirmed:
+  - Valid city search (e.g. Chennai, London) → current weather, 7-day forecast, chart, and recommendations render correctly.
+  - Invalid city search → graceful "city not found" message, no crash.
+  - Browser refresh → app reloads correctly.
+  - Window resize → layout remains usable.
+
+### Troubleshooting Notes
+
+- **`workers.dev` instead of `pages.dev`**: An early deployment attempt landed on a `workers.dev` URL because Cloudflare's "Workers & Pages" section defaulted to creating a Workers project. Fix: explicitly use the Pages project-creation flow (via the direct link above if the tab isn't visible in the sidebar).
+- **Wrong build settings from "VitePress" preset**: Selecting the wrong framework preset auto-filled `npx vitepress build` / `.vitepress/dist`, which do not apply to this Vite+React app. Fix: set framework preset to Vite and manually confirm `npm run build` / `dist`.
+- **Blank-looking page during automated checks**: Because this is a client-side rendered Vite/React SPA, tools that fetch raw HTML without executing JavaScript (e.g. simple HTTP fetchers) will show only the `<title>` and an empty `<div id="root">`. This is expected and is not a bug — the app must be checked in an actual browser with JavaScript enabled.
+
